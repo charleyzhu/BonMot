@@ -48,6 +48,12 @@ jobs:
           when: always
           command: bash <(curl -s https://codecov.io/bash) -f build/BonMot-iOS/slather/cobertura.xml -X coveragepy -X gcov -X xcode
 
+  build-xcode-11-3:
+    executor: xcode-11-3
+    steps:
+      - setup
+      - run: swift build
+
   test-xcode-10-2:
     executor: xcode-10
     steps:
@@ -90,14 +96,18 @@ jobs:
     executor: xcode-10
     steps:
       - setup
-      - run:
-          name: Install CocoaPods Specs Repo
-          command: |
-            curl https://cocoapods-specs.circleci.com/fetch-cocoapods-repo-from-s3.sh | bash -s cf
       - run: bundle exec pod trunk push
 
 
 executors:
+  xcode-11-3:
+    macos:
+      xcode: "11.3.0"
+    environment:
+      LC_ALL: en_US.UTF-8
+      LANG: en_US.UTF-8
+      HOMEBREW_NO_AUTO_UPDATE: 1
+    shell: /bin/bash --login -eo pipefail
   xcode-10:
     macos:
       xcode: "10.2.1"
@@ -145,6 +155,10 @@ workflows:
           filters:
             tags:
               only: /.*/
+      - build-xcode-11-3:
+          filters:
+            tags:
+              only: /.*/
       - test-xcode-10-2:
           filters:
             tags:
@@ -159,6 +173,7 @@ workflows:
               only: /.*/
       - deploy-to-cocoapods:
           requires:
+            - build-xcode-11-3
             - test-xcode-10-2
             - test-xcode-10-1
             - carthage-build
